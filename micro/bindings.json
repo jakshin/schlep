@@ -1,0 +1,10 @@
+{
+    "Alt-d": "DeleteWordRight",
+    "Alt-h": "command-edit:help ",
+    "Alt-p": "command:pwd",
+    "Alt-s": "Save,Quit",
+    "Alt-H": "HSplit",
+    "Alt-V": "VSplit",
+    "Alt-/": "lua:comment.comment",
+    "CtrlUnderscore": "lua:comment.comment"
+}

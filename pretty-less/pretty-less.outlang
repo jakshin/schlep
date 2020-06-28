@@ -1,0 +1,28 @@
+# An output language definition for source-highlight which tries to match its colors up to Nord's,
+# as much as is possible on a 256-color terminal (because I want to use it in Terminal.app,
+# and without a Nord Terminal theme active). Pair this with pretty-less.style.
+
+# Line numbers are supposedly colored brown in pretty-less.style, but that's a lie.
+# I want them gray but darker than comments, and source-highlight only has one shade of gray,
+# so I call 'em brown in that file, and here, define "brown" as actually dark gray.
+
+# Other colors known to source-highlight, but not used here:
+# black, brightgreen, brightorange, cyan, darkgreen, darkred, pink, yellow
+
+extension "ans"
+
+styletemplate "\x1b[$stylem$text\x1b[m"
+color "38;5;$style"
+
+colormap
+  "blue"     "33"
+  "brown"    "234"
+  "darkblue" "24"
+  "gray"     "240"
+  "green"    "107"
+  "orange"   "179"
+  "purple"   "141"
+  "red"      "88"
+  "teal"     "73"
+  "white"    "253"
+end

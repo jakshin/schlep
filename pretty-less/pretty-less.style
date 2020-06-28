@@ -1,0 +1,38 @@
+// A style file for source-highlight which tries to make it color as much as possible like Nord,
+// within the constraints of source-highlight's parsing abilities and the color scheme available.
+// Pair this with pretty-less.outlang (or similar).
+
+// Note that line numbers are supposedly colored brown below, but that's a lie.
+// I want them gray but darker than comments, and source-highlight only has one shade of gray,
+// so I call 'em brown, and in pretty-less.outlang, define "brown" as a dark gray.
+
+cbracket    white;     // block brackets, e.g. { and }
+classname   teal;
+comment     gray;
+function    teal;      // function calls and declarations
+keyword     darkblue;
+linenum     brown;     // line numbers
+number      purple;    // literal numbers
+preproc     darkblue;  // e.g. #include, import
+regexp      orange;
+specialchar orange;    // e.g. \n, \t, \\
+string      green;     // strings and chars
+symbol      white;     // e.g. <, >, + (blue in real Nord, but white looks better here)
+type        teal;      // basic types
+usertype    teal;      // user-defined types
+url         blue;
+variable    white;
+
+// diff files
+oldfile     red;
+newfile     green;
+difflines   teal;
+
+// CSS
+selector    teal;
+property    white;
+value       darkblue;
+
+// for errors
+error       red;
+warning     orange;
