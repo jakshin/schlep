@@ -44,8 +44,9 @@ bind '"\e[1;3D": backward-word'
 
 # Make Alt+Up and Alt+Down search history for items which match what's already been entered,
 # e.g. type `foo` and press Alt+Up to cycle through previous commands which began with "foo"
-bind '"\e[1;3A": history-search-backward'  # Alt-UpArrow
-bind '"\e[1;3B": history-search-forward'   # Alt-DownArrow
+# (These bindings assume Terminal.app/iTerm, bind bind "\e[1;3A" and "\e[1;3B" elsewhere)
+bind '"\e\e[A": history-search-backward'   # Alt-UpArrow
+bind '"\e\e[B": history-search-forward'    # Alt-DownArrow
 
 # Make Tab and Shift-Tab do completion like cmd.exe, where the possibilities are cycled through
 bind '"\C-i": menu-complete'
@@ -67,7 +68,7 @@ complete -j -P '"%' -S '"' fg jobs disown  # Jobs
 
 if [[ -d /etc/bash_completion.d ]]; then
 	for comp_scr in /etc/bash_completion.d/*; do
-		[[ -e $comp_scr ]] && source "$comp_scr"
+		[[ -e $comp_scr ]] && source "$comp_scr" &> /dev/null
 		unset comp_scr
 	done
 fi
