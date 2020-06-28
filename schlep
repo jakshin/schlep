@@ -180,6 +180,9 @@ else
 			docker cp "./." "$remote_host:$base_path/.schlep"
 
 			docker $SCHLEP_DOCKER_OPTIONS exec -it --user "$remote_user" $SCHLEP_DOCKER_CP_OPTIONS "$remote_host" \
+				bash -c 'chown -R "$(whoami)" "$HOME/.schlep"'
+
+			docker $SCHLEP_DOCKER_OPTIONS exec -it --user "$remote_user" $SCHLEP_DOCKER_CP_OPTIONS "$remote_host" \
 				bash -c "$install_cmd"
 		fi
 
