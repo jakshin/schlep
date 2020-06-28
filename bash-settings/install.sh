@@ -5,8 +5,8 @@
 function install_bash_settings() {
 	local file_path="$1"
 
-	if ! grep -F "schlep/settings/bash" "$file_path" &> /dev/null; then
-		echo '[[ ! -e ~/.schlep/settings/bash.sh ]] || source ~/.schlep/settings/bash.sh' >> "$file_path"
+	if ! grep -F "schlep/bash-settings/bash" "$file_path" &> /dev/null; then
+		echo '[[ ! -e ~/.schlep/bash-settings/bash.sh ]] || source ~/.schlep/bash-settings/bash.sh' >> "$file_path"
 	fi
 }
 

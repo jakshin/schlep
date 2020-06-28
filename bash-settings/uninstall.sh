@@ -5,12 +5,12 @@
 function uninstall_bash_settings() {
 	local file_path="$1"
 
-	if grep -F "schlep/settings/bash" "$file_path" &> /dev/null; then
+	if grep -F "schlep/bash-settings/bash" "$file_path" &> /dev/null; then
 		while [[ -L $file_path ]]; do
 			file_path="$(readlink "$file_path")"
 		done
 
-		grep -Fv "schlep/settings/bash" "$file_path" > "$file_path.tmp"
+		grep -Fv "schlep/bash-settings/bash" "$file_path" > "$file_path.tmp"
 		mv -f "$file_path.tmp" "$file_path"
 	fi
 }
