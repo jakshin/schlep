@@ -9,6 +9,10 @@ function uninstall_pretty_less() {
 	fi
 
 	~/.schlep/pretty-less/uninstall.sh
+
+	if ! command -v less > /dev/null && [[ $PAGER == "less" ]]; then
+		unset PAGER
+	fi
 }
 
 uninstall_pretty_less

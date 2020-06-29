@@ -2,6 +2,9 @@
 # Uninstalls the script which adds syntax highlighting to files viewed with "less",
 # and its dependencies if you're running as root.
 
+# Abort on any unexpected error
+set -e
+
 # Run from this script's directory
 cd -- "$(dirname -- "$0")"
 
@@ -9,11 +12,13 @@ cd -- "$(dirname -- "$0")"
 rm -f ~/.schlep/bin/pretty-less.sh
 
 # Uninstall the script's dependencies
-preinstalled_packages="$(cat preinstalled-packages 2> /dev/null || true)"
-declare -a uninstall_packages
+if [[ -s installed-packages ]]; then
+	read -r -d '' -a installed_packages < installed-packages || true
+fi
 
-for package in source-highlight ctags boost-regex libicu; do
-	if [[ $preinstalled_packages != *"[$package]"* ]] && rpm --query "$package" > /dev/null; then
+for package in "${installed_packages[@]}"; do
+	package="${package//[<>]/}"
+	if rpm --query "$package" > /dev/null; then
 		uninstall_packages+=("$package")
 	fi
 done
@@ -21,8 +26,15 @@ done
 if [[ "${#uninstall_packages[@]}" != 0 ]]; then
 	if [[ "$(whoami)" != "root" ]]; then
 		echo "Sorry, ya gotta run this script as root to uninstall pretty-less.sh's dependencies"
-		exit
+		false
 	else
-		yum --disablerepo="C7-*" -q -y erase "${uninstall_packages[@]}"
+		yum_opts=('--disablerepo=C7-*' '--enablerepo=base' '--enablerepo=updates' '--enablerepo=extras')
+		yum "${yum_opts[@]}" -q -y erase "${uninstall_packages[@]}"
 	fi
+fi
+
+# Undo any changes we made in /etc/yum.repos.d
+if [[ "$(echo /etc/yum.repos.d/schlep*)" != "/etc/yum.repos.d/schlep*" ]]; then
+	rm -f /etc/yum.repos.d/schlep*
+	yum clean all
 fi

@@ -4,7 +4,10 @@
 function install_pretty_less() {
 	~/.schlep/pretty-less/install.sh
 
-	if command -v pretty-less.sh > /dev/null; then
+	if command -v less > /dev/null && command -v pretty-less.sh > /dev/null; then
+		export PAGER=less
+		export LESS=iMR
+		export LESSHISTFILE=-
 		export LESSOPEN='|pretty-less.sh "%s"'
 	fi
 }
