@@ -18,6 +18,7 @@ function usage() {
 	echo "  -a, --all     Install all the things" | opt
 	echo "  -b, --basic   Install only basic settings (default)" | opt
 	echo "  -f, --force   Install even if schlep's directory already exists on the remote host" | opt
+	echo "  -q, --quiet   Install quietly (otherwise a bit of progress is shown)" | opt
 	echo "  --uninstall   Uninstall schlep's files from the remote" | opt
 	echo
 	echo "  -d, --docker  The remote host is a docker container" | opt
@@ -90,6 +91,7 @@ all_install_cmd='find "$HOME/.schlep" -name "install.sh" -exec {} \;'
 basic_install_cmd='find "$HOME/.schlep" -path "*-settings/install.sh" -exec {} \;'
 install_cmd="$basic_install_cmd"
 force_install=false
+quiet_install=false
 uninstall=false
 
 remote_host=""
@@ -106,6 +108,8 @@ for arg in "${args[@]}"; do
 		install_cmd="$basic_install_cmd"
 	elif [[ $arg == "-f" || $arg == "--force" ]]; then
 		force_install=true
+	elif [[ $arg == "-q" || $arg == "--quiet" ]]; then
+		quiet_install=true
 	elif [[ $arg == "--uninstall" ]]; then
 		uninstall=true
 
@@ -179,6 +183,8 @@ else
 			docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
 				bash -c 'mkdir -p "$HOME/.schlep" && echo -n '"$remote_host"' > "$HOME/.schlep/.host"'
 
+			[[ $quiet_install == true ]] || echo "Schlepping files..."
+
 			for thing in *; do
 				if [[ $thing != "bin" && $thing != "LICENSE" && $thing != "README.md" ]]; then
 					docker $SCHLEP_DOCKER_OPTS cp $SCHLEP_DOCKER_CP_OPTS "$thing" "$remote_host:$base_path/.schlep"
@@ -188,6 +194,7 @@ else
 			docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
 				bash -c 'chown -R --reference="$HOME" "$HOME/.schlep"'
 
+			[[ $quiet_install == true ]] || echo "Installing..."
 			docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash -c "$install_cmd"
 		fi
 
@@ -197,12 +204,14 @@ else
 	elif [[ $remote_type == "ssh" ]]; then
 		# Install if we need to
 		if [[ $install == true ]]; then
+			[[ $quiet_install == true ]] || echo "Schlepping files..."
 			rsync -DlpqRrtu --exclude=".git" --exclude="bin" --exclude="LICENSE" --exclude="/README.md" \
 				$SCHLEP_RSYNC_OPTS ./ "$remote_user@$remote_host:~/.schlep"
 
 			ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" \
 				"echo -n $remote_host > \"\$HOME/.schlep/.host\""
 
+			[[ $quiet_install == true ]] || echo "Installing..."
 			ssh -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$install_cmd"
 		fi
 
