@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Schleps settings and utilities to an SSH host or docker container.
-# https://github.com/jakshin/schlep
 # Copyright (c) 2020 Jason Jackson. MIT license.
+# https://github.com/jakshin/schlep
 
 function usage() {
 	if [[ $1 == true ]]; then
@@ -192,7 +192,7 @@ else
 		fi
 
 		# Connect interactively
-		docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash
+		exec docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash
 
 	elif [[ $remote_type == "ssh" ]]; then
 		# Install if we need to
@@ -207,6 +207,6 @@ else
 		fi
 
 		# Connect interactively
-		ssh -t $SCHLEP_SSH_OPTS "$remote_user@$remote_host"
+		exec ssh -t $SCHLEP_SSH_OPTS "$remote_user@$remote_host"
 	fi
 fi
