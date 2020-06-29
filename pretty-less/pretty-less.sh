@@ -44,10 +44,12 @@ fi
 
 # Bail if the input file doesn't appear to be text;
 # Less will prompt that it "may be a binary file", if it wants to
-mime_type="$(file -b --mime-type "$input")"
-if [[ $mime_type != text/* ]]; then
-	[[ -z $temp_dir ]] || rm -rf "$temp_dir"
-	false
+if command -v file > /dev/null; then
+	mime_type="$(file -b --mime-type "$input")"
+	if [[ $mime_type != text/* ]]; then
+		[[ -z $temp_dir ]] || rm -rf "$temp_dir"
+		false
+	fi
 fi
 
 # Handle the input language
