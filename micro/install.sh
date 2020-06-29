@@ -14,7 +14,7 @@ set -e
 cd -- "$(dirname -- "$0")"
 
 # Download the latest release's tarball
-if [[ "$(echo micro*.tar.gz)" != "micro*.tar.gz" ]]; then
+if [[ "$(echo micro*.tar.gz)" == "micro*.tar.gz" ]]; then
 	latest_url="$(curl "https://github.com/zyedidia/micro/releases/latest" -s -L -I -o /dev/null -w '%{url_effective}')"
 	version="${latest_url//*\/v/}"
 	curl -sS -LO "https://github.com/zyedidia/micro/releases/download/v${version}/micro-${version}-linux64.tar.gz"
