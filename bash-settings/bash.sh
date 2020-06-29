@@ -7,7 +7,7 @@
 [[ -n $BASH_VERSION ]] || return
 
 # --- Aliases ---
-unalias bell cp mv rm df du grep ls ll la which &> /dev/null || true
+unalias bell cp mv rm df du grep ls ll la theme which &> /dev/null || true
 
 alias bell='tput bel'
 
@@ -29,6 +29,7 @@ alias ls='ls --color=auto --file-type -h'
 alias ll='ls -l'   # Long list
 alias la='ls -lA'  # All except . and ..
 
+alias theme='trap DEBUG; _theme_fn'
 alias which='type -a'
 
 # --- Command-line editing ---
@@ -130,7 +131,9 @@ else
 	host="$(hostname)"
 fi
 
-function theme() {
+function _theme_fn() {
+	# CALL THIS THROUGH THE "theme" ALIAS, NOT DIRECTLY
+
 	local theme_name="$1"
 	local bright_input="$2"
 
