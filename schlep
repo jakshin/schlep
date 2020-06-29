@@ -199,7 +199,8 @@ else
 
 	elif [[ $remote_type == "ssh" ]]; then
 		if [[ $install == true ]]; then
-			rsync -aRuv $SCHLEP_RSYNC_OPTS ./ "$remote_user@$remote_host:~/.schlep"
+			rsync -aqRu --exclude=".git" --exclude="bin" --exclude="LICENSE" --exclude="/README.md" \
+				$SCHLEP_RSYNC_OPTS ./ "$remote_user@$remote_host:~/.schlep"
 			ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$install_cmd"
 		fi
 
