@@ -150,8 +150,6 @@ function theme() {
 	if [[ $bright_input == true || $bright_input == "bright" ]]; then
 		PS1+='\[\e[1m\]'
 		trap 'printf \\e[0m' DEBUG
-	else
-		trap DEBUG  # FIXME does this work on recent bash? it doesn't on macOS's 3.2
 	fi
 }
 
