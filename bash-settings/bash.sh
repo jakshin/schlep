@@ -44,7 +44,7 @@ bind '"\e[1;3D": backward-word'
 
 # Make Alt+Up and Alt+Down search history for items which match what's already been entered,
 # e.g. type `foo` and press Alt+Up to cycle through previous commands which began with "foo"
-# (These bindings assume Terminal.app/iTerm, bind bind "\e[1;3A" and "\e[1;3B" elsewhere)
+# (These bindings assume Terminal.app/iTerm, bind "\e[1;3A" and "\e[1;3B" elsewhere)
 bind '"\e\e[A": history-search-backward'   # Alt-UpArrow
 bind '"\e\e[B": history-search-forward'    # Alt-DownArrow
 
