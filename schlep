@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Schleps settings and utilities to an SSH host or docker container.
+# https://github.com/jakshin/schlep
 # Copyright (c) 2020 Jason Jackson. MIT license.
 
 function usage() {
@@ -29,9 +30,10 @@ function usage() {
 	echo
 	echo "  The user can also be given as part of the host name, like 'user@host'"
 	echo
-	echo "Additional options can be passed to rsync (used with SSH hosts), SSH, and docker"
-	echo 'by exporting any or all of these environment variables: $SCHLEP_RSYNC_OPTIONS,' | var
-	echo '$SCHLEP_SSH_OPTIONS, $SCHLEP_DOCKER_OPTIONS, $SCHLEP_DOCKER_CP_OPTIONS' | var
+	echo "Additional options can be passed to docker, SSH, and rsync (used with SSH hosts),"
+	echo "by exporting any or all of these environment variables:"
+	echo '$SCHLEP_DOCKER_OPTS, $SCHLEP_DOCKER_CP_OPTS, $SCHLEP_DOCKER_EXEC_OPTS,' | var
+	echo '$SCHLEP_SSH_OPTS, $SCHLEP_RSYNC_OPTS' | var
 	exit
 }
 
@@ -147,10 +149,10 @@ if [[ $uninstall == true ]]; then
 	uninstall_cmd='find "$HOME/.schlep" -name "uninstall.sh" -exec {} \; && rm -rf "$HOME/.schlep"'
 
 	if [[ $remote_type == "docker" ]]; then
-		docker $SCHLEP_DOCKER_OPTIONS exec -it --user "$remote_user" $SCHLEP_DOCKER_CP_OPTIONS "$remote_host" \
+		docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_CP_OPTS "$remote_host" \
 			bash -c "$uninstall_cmd"
 	elif [[ $remote_type == "ssh" ]]; then
-		ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTIONS "$remote_user@$remote_host" "$uninstall_cmd"
+		ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$uninstall_cmd"
 	fi
 
 # Otherwise, copy files and run install scripts if needed, then connect interactively
@@ -162,13 +164,13 @@ else
 		not_installed_cmd='[ ! -d $HOME/.schlep ]'
 
 		if [[ $remote_type == "docker" ]]; then
-			if docker $SCHLEP_DOCKER_OPTIONS exec -it --user "$remote_user" $SCHLEP_DOCKER_CP_OPTIONS "$remote_host" \
+			if docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
 				bash -c "$not_installed_cmd"
 			then
 				install=true
 			fi
 		elif [[ $remote_type == "ssh" ]]; then
-			if ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTIONS "$remote_user@$remote_host" "$not_installed_cmd"; then
+			if ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$not_installed_cmd"; then
 				install=true
 			fi
 		fi
@@ -177,23 +179,30 @@ else
 	if [[ $remote_type == "docker" ]]; then
 		if [[ $install == true ]]; then
 			[[ $remote_user == "root" ]] && base_path="/root" || base_path="/home/$remote_user"
-			docker cp "./." "$remote_host:$base_path/.schlep"
+			docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
+				bash -c 'mkdir "$HOME/.schlep"'
 
-			docker $SCHLEP_DOCKER_OPTIONS exec -it --user "$remote_user" $SCHLEP_DOCKER_CP_OPTIONS "$remote_host" \
+			for thing in *; do
+				if [[ $thing != "bin" && $thing != "LICENSE" && $thing != "README.md" ]]; then
+					docker $SCHLEP_DOCKER_OPTS cp $SCHLEP_DOCKER_CP_OPTS "$thing" "$remote_host:$base_path/.schlep"
+				fi
+			done
+
+			docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
 				bash -c 'chown -R "$(whoami)" "$HOME/.schlep"'
 
-			docker $SCHLEP_DOCKER_OPTIONS exec -it --user "$remote_user" $SCHLEP_DOCKER_CP_OPTIONS "$remote_host" \
+			docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
 				bash -c "$install_cmd"
 		fi
 
-		docker $SCHLEP_DOCKER_OPTIONS exec -it --user "$remote_user" $SCHLEP_DOCKER_CP_OPTIONS "$remote_host" bash
+		docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash
 
 	elif [[ $remote_type == "ssh" ]]; then
 		if [[ $install == true ]]; then
-			rsync -aRuv $SCHLEP_RSYNC_OPTIONS ./ "$remote_user@$remote_host:~/.schlep"
-			ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTIONS "$remote_user@$remote_host" "$install_cmd"
+			rsync -aRuv $SCHLEP_RSYNC_OPTS ./ "$remote_user@$remote_host:~/.schlep"
+			ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$install_cmd"
 		fi
 
-		ssh -t $SCHLEP_SSH_OPTIONS "$remote_user@$remote_host"
+		ssh -t $SCHLEP_SSH_OPTS "$remote_user@$remote_host"
 	fi
 fi
