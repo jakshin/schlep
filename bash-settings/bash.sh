@@ -1,7 +1,6 @@
 # Settings for bash. Source this file to use them.
 # Copyright (c) 2020 Jason Jackson. MIT license.
 
-
 # Don't do anything if we're not running interactively under bash
 [[ $- =~ i ]] || return
 [[ -n $BASH_VERSION ]] || return
@@ -167,9 +166,6 @@ else
 fi
 
 # --- Terminal integration ---
-export COLUMNS LINES
-shopt -s checkwinsize  # Make bash check its window size after a process completes
-
 function detect_terminal() {
 	local tty_settings=""
 
@@ -190,35 +186,22 @@ function detect_terminal() {
 	elif [[ $info == "0;95;0" ]]; then
 		# Might also be tmux? https://github.com/mintty/mintty/issues/776#issuecomment-475720406
 		export TERM_PROGRAM="iTerm.app"
+		export COLORTERM=truecolor
 	fi
 }
 
+function term_title() {
+	local new_title="$1"
+
+	if [[ $TERM_PROGRAM == "iTerm.app" ]]; then
+		echo -en "\033]1;$new_title\a"
+	else
+		echo -en "\033]0;$new_title\a"
+		[[ $TERM_PROGRAM != "Apple_Terminal" ]] || echo -en '\033]7;\a'
+	fi
+}
+
+export COLUMNS LINES TERM=xterm-256color
+shopt -s checkwinsize  # Make bash check its window size after a process completes
 detect_terminal
-export TERM=xterm-256color
-
-if [[ $TERM_PROGRAM == "Apple_Terminal" ]]; then
-	PROMPT_COMMAND='apple_terminal_integration'
-
-	function apple_terminal_integration() {
-		local ch enc hex i LC_CTYPE=C LC_ALL=""
-
-		for (( i=0; i < ${#PWD}; i++ )); do
-			ch="${PWD:i:1}"
-			if [[ "$ch" =~ [/._~A-Za-z0-9-] ]]; then
-				enc+="$ch"
-			else
-				printf -v hex "%02X" "'$ch"
-				enc+="%${hex: -2:2}"
-			fi
-		done
-
-		echo -en "\033]7;file://${host}${enc}\a"
-	}
-elif [[ $TERM_PROGRAM == "iTerm.app" ]]; then
-	export COLORTERM=truecolor
-	PROMPT_COMMAND='echo -en "\033]1;${PWD/$HOME/~}\a"' # FIXME use $host
-else
-	# This works on Windows in ConEmu, Mintty, Terminus, and Windows Console; and on Linux
-	# in Konsole, GNOME Terminal, LXTerminal, MATE Terminal, QTerminal, Terminology, Xfce Terminal, and XTerm
-	PROMPT_COMMAND='echo -en "\033]0;${PWD/$HOME/\~}\a"' # FIXME use $host
-fi
+term_title "$host"
