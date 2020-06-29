@@ -177,7 +177,7 @@ else
 		if [[ $install == true ]]; then
 			[[ $remote_user == "root" ]] && base_path="/root" || base_path="/home/$remote_user"
 			docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
-				bash -c 'mkdir "$HOME/.schlep" && echo -n '"$remote_host"' > "$HOME/.schlep/.host"'
+				bash -c 'mkdir -p "$HOME/.schlep" && echo -n '"$remote_host"' > "$HOME/.schlep/.host"'
 
 			for thing in *; do
 				if [[ $thing != "bin" && $thing != "LICENSE" && $thing != "README.md" ]]; then

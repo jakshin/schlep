@@ -39,5 +39,7 @@ if ! command -v source-highlight > /dev/null; then
 fi
 
 # Symlink the script
-mkdir -p ~/.schlep/bin
-ln -s "$PWD/pretty-less.sh" ~/.schlep/bin/pretty-less.sh
+if [[ ! -L ~/.schlep/bin/pretty-less.sh ]]; then
+	mkdir -p ~/.schlep/bin
+	ln -s "$PWD/pretty-less.sh" ~/.schlep/bin/pretty-less.sh
+fi

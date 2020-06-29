@@ -20,10 +20,12 @@ fi
 
 # If view doesn't exist, or is a symlink to vi (not vim), and vim exists, 
 # make a new view symlink to vim in ~/.schlep/bin (could also `alias view='vim -R'`)
-view_path="$(command -v view)"
-vim_path="$(command -v vim)"
+if [[ ! -L ~/.schlep/bin/view ]]; then
+	view_path="$(command -v view)"  # Can happen before or after ~/.schlep/bin is added to $PATH
+	vim_path="$(command -v vim)"
 
-if [[ (-z $view_path || "$(readlink "$view_path")" == *"vi") && -n $vim_path ]]; then
-	mkdir -p ~/.schlep/bin
-	ln -s "$vim_path" ~/.schlep/bin/view
+	if [[ (-z $view_path || "$(readlink "$view_path")" == *"vi") && -n $vim_path ]]; then
+		mkdir -p ~/.schlep/bin
+		ln -s "$vim_path" ~/.schlep/bin/view
+	fi
 fi

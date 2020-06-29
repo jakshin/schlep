@@ -31,8 +31,10 @@ dir_name="micro-${version}"
 [[ -d $dir_name ]] || tar -xzf micro*.tar.gz
 
 # Symlink the binary
-mkdir -p ~/.schlep/bin
-ln -s "$PWD/$dir_name/micro" ~/.schlep/bin/micro
+if [[ ! -L ~/.schlep/bin/micro ]]; then
+	mkdir -p ~/.schlep/bin
+	ln -s "$PWD/$dir_name/micro" ~/.schlep/bin/micro
+fi
 
 # Symlink settings files
 [[ -n $MICRO_CONFIG_HOME ]] && cfg_dir="$MICRO_CONFIG_HOME" || cfg_dir="${XDG_CONFIG_DIR:-$HOME/.config}/micro"
