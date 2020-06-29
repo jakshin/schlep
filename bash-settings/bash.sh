@@ -156,8 +156,12 @@ function _theme_fn() {
 	fi
 }
 
-[[ -n $INSTANCE_ID ]] && theme blue || theme safari
 PROMPT_COMMAND=""
+if [[ -n $INSTANCE_ID ]]; then
+	theme blue
+else
+	theme safari
+fi
 
 # --- Terminal integration ---
 export COLUMNS LINES
