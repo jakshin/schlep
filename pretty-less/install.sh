@@ -23,19 +23,17 @@ cd -- "$(dirname -- "$0")"
 # Install source-highlight and its dependencies
 # NOTE THAT THIS IS A GLOBAL INSTALLATION, I.E. IT MAKES DEVICE-WIDE CHANGES
 if ! command -v source-highlight > /dev/null; then
-	# Download RPMs for CentOS 7
-	# https://centos.pkgs.org/7/centos-x86_64/source-highlight-3.1.6-6.el7.x86_64.rpm.html
-	# https://centos.pkgs.org/7/centos-x86_64/ctags-5.8-13.el7.x86_64.rpm.html
-	# https://centos.pkgs.org/7/centos-x86_64/boost-regex-1.53.0-28.el7.x86_64.rpm.html
-	# https://centos.pkgs.org/7/centos-updates-x86_64/libicu-50.2-4.el7_7.x86_64.rpm.html
-	curl -sS -LO "http://mirror.centos.org/centos/7/os/x86_64/Packages/source-highlight-3.1.6-6.el7.x86_64.rpm"
-	curl -sS -LO "http://mirror.centos.org/centos/7/os/x86_64/Packages/ctags-5.8-13.el7.x86_64.rpm"
-	curl -sS -LO "http://mirror.centos.org/centos/7/os/x86_64/Packages/boost-regex-1.53.0-28.el7.x86_64.rpm"
-	curl -sS -LO "http://mirror.centos.org/centos/7/updates/x86_64/Packages/libicu-50.2-4.el7_7.x86_64.rpm"
+	# Note which of the relevant packages was already installed
+	echo -n > preinstalled-packages
 
-	# Install the RPMs
-	rpm --install "source-highlight-3.1.6-6.el7.x86_64.rpm" "ctags-5.8-13.el7.x86_64.rpm" \
-		"boost-regex-1.53.0-28.el7.x86_64.rpm" "libicu-50.2-4.el7_7.x86_64.rpm"
+	for package in source-highlight ctags boost-regex libicu; do
+		if rpm --query "$package" > /dev/null; then
+			echo -n "[$package] " >> preinstalled-packages
+		fi
+	done
+
+	# Install source-highlight and its dependencies
+	yum --disablerepo="C7-*" -q -y install source-highlight
 fi
 
 # Symlink the script

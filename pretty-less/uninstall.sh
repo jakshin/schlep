@@ -2,22 +2,27 @@
 # Uninstalls the script which adds syntax highlighting to files viewed with "less",
 # and its dependencies if you're running as root.
 
-# Remove the symlink, if it exists
+# Run from this script's directory
+cd -- "$(dirname -- "$0")"
+
+# Remove the script's symlink, if it exists
 rm -f ~/.schlep/bin/pretty-less.sh
 
 # Uninstall the script's dependencies
-declare -a installed_packages
+preinstalled_packages="$(cat preinstalled-packages 2> /dev/null || true)"
+declare -a uninstall_packages
 
-for package in libuci boost-regex ctags source-highlight; do
-	if rpm --query "$package" > /dev/null; then
-		installed_packages+=("$package")
+for package in source-highlight ctags boost-regex libicu; do
+	if [[ $preinstalled_packages != *"[$package]"* ]] && rpm --query "$package" > /dev/null; then
+		uninstall_packages+=("$package")
 	fi
 done
 
-if [[ "${#installed_packages[@]}" != 0 ]]; then
+if [[ "${#uninstall_packages[@]}" != 0 ]]; then
 	if [[ "$(whoami)" != "root" ]]; then
 		echo "Sorry, ya gotta run this script as root to uninstall pretty-less.sh's dependencies"
+		exit
 	else
-		rpm --erase "${installed_packages[@]}"
+		yum --disablerepo="C7-*" -q -y erase "${uninstall_packages[@]}"
 	fi
 fi
