@@ -2,6 +2,7 @@
     "Alt-d": "DeleteWordRight",
     "Alt-h": "command-edit:help ",
     "Alt-p": "command:pwd",
+    "Alt-q": "Quit",
     "Alt-s": "Save,Quit",
     "Alt-H": "HSplit",
     "Alt-V": "VSplit",
