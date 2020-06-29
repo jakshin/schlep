@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # Installs vim settings for syntax coloring, if possible.
 
-if [[ ! -e ~/.vim ]] && vi --version | grep -Fq "+syntax"; then
+if ! vi --version | grep -Fq "+syntax"; then
+	echo "Not installing vim settings: vim wasn't compiled with syntax support"
+elif [[ -e ~/.vim && ! -L ~/.vim ]]; then
+	echo "Not installing vim settings: existing vim settings are present"
+elif [[ ! -L ~/.vim ]]; then
 	ln -s ~/.schlep/vim-settings/dotvim ~/.vim
 fi
 

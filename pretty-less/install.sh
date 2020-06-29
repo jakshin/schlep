@@ -4,13 +4,13 @@
 
 # We assume CentOS 7 x86-64 below
 if [[ "$(uname -m)" != "x86_64" || ! -e /etc/centos-release ]] || ! grep -Fq " 7" /etc/centos-release; then
-	echo "Sorry, this script only knows how to install less syntax highlighting on CentOS 7 x86-64"
+	echo "Not installing pretty-less: currently only supported on on CentOS 7 x86-64"
 	exit
 fi
 
 # Must be running as root
 if [[ "$(whoami)" != "root" ]]; then
-	echo "Sorry, ya gotta run this script as root (it installs things globally)"
+	echo "Not installing pretty-less: ya gotta install as root (RPMs are installed system-wide)"
 	exit
 fi
 

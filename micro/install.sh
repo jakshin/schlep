@@ -3,7 +3,7 @@
 
 # We assume Linux x86-64 below (https://getmic.ro has cross-platform logic)
 if [[ "$(uname -s)" != "Linux" || "$(uname -m)" != "x86_64" ]]; then
-	echo "Sorry, this script only knows how to install micro on GNU/Linux x86-64"
+	echo "Not installing micro: currently only supported on on GNU/Linux x86-64"
 	exit
 fi
 
