@@ -152,13 +152,16 @@ SCHLEP_DOCKER_EXEC_OPTS="-it --user $remote_user $SCHLEP_DOCKER_EXEC_OPTS"
 
 # Uninstall schlep from the remote, if that's what we're supposed to do
 if [[ $uninstall == true ]]; then
-	uninstall_cmd='find "$HOME/.schlep" -name "uninstall.sh" -exec {} \; && rm -rf "$HOME/.schlep"'
+	[[ $quiet_install == true ]] || echo "Uninstalling schlep's files..."
+	uninstall_cmd='find "$HOME/.schlep" -name "uninstall.sh" -exec {} --remote \; && rm -rf "$HOME/.schlep"'
 
 	if [[ $remote_type == "docker" ]]; then
 		docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash -c "$uninstall_cmd"
 	elif [[ $remote_type == "ssh" ]]; then
 		ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$uninstall_cmd"
 	fi
+
+	[[ $quiet_install == true ]] || echo "All done -- $remote_host is as it was before schlep was installed"
 
 # Otherwise, copy files and run install scripts if needed, then connect interactively
 else
@@ -173,6 +176,12 @@ else
 
 		elif [[ $remote_type == "ssh" ]]; then
 			install="$(ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$installed_cmd")"
+		fi
+
+		if [[ $install != true && $quiet_install != true ]]; then
+			# If you previously installed only basic settings, and now want to install all features,
+			# either use -f/--force along with -a/--all, or run schlep_install in your interactive session
+			echo "Schlep has already been installed -- keeping its current settings"
 		fi
 	fi
 

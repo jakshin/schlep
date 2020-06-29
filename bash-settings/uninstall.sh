@@ -19,5 +19,7 @@ uninstall_bash_settings ~/.bashrc
 uninstall_bash_settings ~/.bash_profile
 uninstall_bash_settings ~/.profile
 
-echo "The bash settings are still active in this session."
-echo "To start again without them: exec bash --login"
+if [[ "$*" != *"--remote"* ]]; then
+	echo "The bash settings are still active in this session."
+	echo "To start again without them: exec bash --login"
+fi
