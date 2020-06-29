@@ -6,5 +6,9 @@
     "Alt-H": "HSplit",
     "Alt-V": "VSplit",
     "Alt-/": "lua:comment.comment",
-    "CtrlUnderscore": "lua:comment.comment"
+    "CtrlUnderscore": "lua:comment.comment",
+    "CtrlShiftLeft":  "SelectToStartOfTextToggle",                                                                                                 
+    "CtrlShiftRight": "SelectToEndOfLine",                                                                                                         
+    "AltShiftLeft":   "SelectWordLeft",                                                                                                            
+    "AltShiftRight":  "SelectWordRight"   
 }

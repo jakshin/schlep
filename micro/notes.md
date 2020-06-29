@@ -19,10 +19,10 @@ e.g. over SSH, into the local clipboard.
 Use `show mouse` to see the setting's current state (I leave mouse support enabled by default).
 
 To select text in micro with the mouse (Terminal/iTerm won't know it's selected), 
-and use `Ctrl+C` to copy it to the clipboard where micro is running: `setlocal mouse true`
+and use `Ctrl+C` to copy it to the clipboard where micro is running: `set mouse true`
 
 To select text in Terminal/iTerm with the mouse (micro won't know it's selected),
-and use `Cmd+C` to copy it to the clipboard where Terminal/iTerm is running: `setlocal mouse false`
+and use `Cmd+C` to copy it to the clipboard where Terminal/iTerm is running: `set mouse false`
 
 ## Paragraphs
 
