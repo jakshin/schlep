@@ -123,7 +123,10 @@ unset MAILCHECK
 
 # By default, we'll show the host in the prompt (and the terminal emulator's tab or title bar);
 # you can manually set $host to whatever you like, though (e.g. host="debugging-in-prod")
-if [[ -n $INSTANCE_ID ]]; then
+if [[ -s ~/.schlep/.host ]]; then
+	host="$(cat ~/.schlep/.host)"
+	host="${host//.*/}"
+elif [[ -n $INSTANCE_ID ]]; then
 	host="${INSTANCE_ID//.*/}"
 elif [[ -n $HOSTNAME ]]; then
 	host="$HOSTNAME"

@@ -144,13 +144,14 @@ if [[ -z $remote_type ]]; then
 	[[ $remote_host == *.* ]] && remote_type="ssh" || remote_type="docker"
 fi
 
+SCHLEP_DOCKER_EXEC_OPTS="-it --user $remote_user $SCHLEP_DOCKER_EXEC_OPTS"
+
 # Uninstall schlep from the remote, if that's what we're supposed to do
 if [[ $uninstall == true ]]; then
 	uninstall_cmd='find "$HOME/.schlep" -name "uninstall.sh" -exec {} \; && rm -rf "$HOME/.schlep"'
 
 	if [[ $remote_type == "docker" ]]; then
-		docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_CP_OPTS "$remote_host" \
-			bash -c "$uninstall_cmd"
+		docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash -c "$uninstall_cmd"
 	elif [[ $remote_type == "ssh" ]]; then
 		ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$uninstall_cmd"
 	fi
@@ -160,27 +161,23 @@ else
 	if [[ $force_install == true ]]; then
 		install=true
 	else
-		install=false
-		not_installed_cmd='[ ! -d $HOME/.schlep ]'
+		installed_cmd='[[ -d "$HOME/.schlep" ]] && echo -n false || echo -n true'
 
 		if [[ $remote_type == "docker" ]]; then
-			if docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
-				bash -c "$not_installed_cmd"
-			then
-				install=true
-			fi
+			install="$(docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash -c "$installed_cmd")"
+			install="$(echo $install)"
+
 		elif [[ $remote_type == "ssh" ]]; then
-			if ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$not_installed_cmd"; then
-				install=true
-			fi
+			install="$(ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$installed_cmd")"
 		fi
 	fi
 
 	if [[ $remote_type == "docker" ]]; then
+		# Install if we need to
 		if [[ $install == true ]]; then
 			[[ $remote_user == "root" ]] && base_path="/root" || base_path="/home/$remote_user"
-			docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
-				bash -c 'mkdir "$HOME/.schlep"'
+			docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
+				bash -c 'mkdir "$HOME/.schlep" && echo -n '"$remote_host"' > "$HOME/.schlep/.host"'
 
 			for thing in *; do
 				if [[ $thing != "bin" && $thing != "LICENSE" && $thing != "README.md" ]]; then
@@ -188,22 +185,28 @@ else
 				fi
 			done
 
-			docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
-				bash -c 'chown -R "$(whoami)" "$HOME/.schlep"'
+			docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
+				bash -c 'chown -R --reference="$HOME" "$HOME/.schlep"'
 
-			docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
-				bash -c "$install_cmd"
+			docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash -c "$install_cmd"
 		fi
 
-		docker $SCHLEP_DOCKER_OPTS exec -it --user "$remote_user" $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash
+		# Connect interactively
+		docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash
 
 	elif [[ $remote_type == "ssh" ]]; then
+		# Install if we need to
 		if [[ $install == true ]]; then
-			rsync -aqRu --exclude=".git" --exclude="bin" --exclude="LICENSE" --exclude="/README.md" \
+			rsync -DlpqRrtu --exclude=".git" --exclude="bin" --exclude="LICENSE" --exclude="/README.md" \
 				$SCHLEP_RSYNC_OPTS ./ "$remote_user@$remote_host:~/.schlep"
-			ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$install_cmd"
+
+			ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" \
+				"echo -n $remote_host > \"\$HOME/.schlep/.host\""
+
+			ssh -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$install_cmd"
 		fi
 
+		# Connect interactively
 		ssh -t $SCHLEP_SSH_OPTS "$remote_user@$remote_host"
 	fi
 fi
