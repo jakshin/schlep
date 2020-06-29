@@ -74,6 +74,10 @@ if [[ -d /etc/bash_completion.d ]]; then
 fi
 
 # --- Functions ---
+function schlep() {
+	~/.schlep/schlep "$@"
+}
+
 function schlep_install() {
 	local feature="$1"  # e.g. "micro"
 
