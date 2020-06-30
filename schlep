@@ -14,22 +14,32 @@ function usage() {
 	echo
 	bright "Options:\n"
 	echo "  -h, --help    Show this help and exit" | opt
+	echo "  -q, --quiet   Operate quietly (otherwise a bit of progress is shown)" | opt
 	echo
-	echo "  -a, --all     Install all the things" | opt
-	echo "  -b, --basic   Install only basic settings (default)" | opt
-	echo "  -f, --force   Install even if schlep's directory already exists on the remote host" | opt
-	echo "  -q, --quiet   Install quietly (otherwise a bit of progress is shown)" | opt
-	echo "  --uninstall   Uninstall schlep's files from the remote" | opt
+	echo "  --uninstall   Uninstall schlep's files from the remote host, then exit" | opt
+	echo "                No interactive connection is made to the host"
+	echo
+	echo "  --user=USER   The remote user to connect as (default = root)" | opt
+	echo "                User can also be given with host name, like 'user@host'"
+	echo
+	echo "Schlep tries to detect whether it's connecting to an SSH host or docker container,"
+	echo "based on whether the host's name contains any dots (if it does, assume SSH)."
+	echo "If that's an incorrect guess, you can correct it:"
 	echo
 	echo "  -d, --docker  The remote host is a docker container" | opt
 	echo "  -s, --ssh     The remote host is an SSH server" | opt
 	echo
-	echo "  If neither of the above options is given, the remote host is assumed to be SSH"
-	echo "  iff its name contains a dot; otherwise, it's assumed to be a docker container"
+	echo "Schlep's first action is copying its files to the remote host. By default,"
+	echo "this is only done once per user, to save time on subsequent connections,"
+	echo "but you can make schlep copy its files again (like if you've changed them):"
 	echo
-	echo "  --user=USER   The remote user to connect as (default = root)" | opt
+	echo "  -c, --copy    Copy schlep's files to the remote host," | opt
+	echo "                even if ~/.schlep already exists there"
 	echo
-	echo "  The user can also be given as part of the host name, like 'user@host'"
+	echo "After copying files, schlep runs one or more install scripts. By default,"
+	echo "it only installs bash settings, and only installs after copying files."
+	echo
+	echo "  -a, --all     Ensure all features are installed, not just bash settings" | opt
 	echo
 	echo "Additional options can be passed to docker, SSH, and rsync (used with SSH hosts),"
 	echo "by exporting any or all of these environment variables:"
@@ -87,39 +97,31 @@ done
 script_name="$(basename -- "$0")"
 (( "${#args[@]}" > 0 )) || usage true
 
-all_install_cmd='find "$HOME/.schlep" -name "install.sh" -exec {} \;'
-basic_install_cmd='find "$HOME/.schlep" -path "*-settings/install.sh" -exec {} \;'
-install_cmd="$basic_install_cmd"
-force_install=false
-quiet_install=false
+quiet=false
 uninstall=false
-
-remote_host=""
-remote_type=""
 remote_user="root"
+remote_type=""
+copy_files=false
+install_all=false
+remote_host=""
 
 for arg in "${args[@]}"; do
 	if [[ $arg == "-h" || $arg == "--help" ]]; then
 		usage true
-
-	elif [[ $arg == "-a" || $arg == "--all" ]]; then
-		install_cmd="$all_install_cmd"
-	elif [[ $arg == "-b" || $arg == "--basic" ]]; then
-		install_cmd="$basic_install_cmd"
-	elif [[ $arg == "-f" || $arg == "--force" ]]; then
-		force_install=true
 	elif [[ $arg == "-q" || $arg == "--quiet" ]]; then
-		quiet_install=true
+		quiet=true
 	elif [[ $arg == "--uninstall" ]]; then
 		uninstall=true
-
+	elif [[ $arg == "--user="* ]]; then
+		remote_user="${arg/*=/}"
 	elif [[ $arg == "-d" || $arg == "--docker" ]]; then
 		remote_type="docker"
 	elif [[ $arg == "-s" || $arg == "--ssh" ]]; then
 		remote_type="ssh"
-	elif [[ $arg == "--user="* ]]; then
-		remote_user="${arg/*=/}"
-
+	elif [[ $arg == "-c" || $arg == "--copy" ]]; then
+		copy_files=true
+	elif [[ $arg == "-a" || $arg == "--all" ]]; then
+		install_all=true
 	elif [[ $arg == -* ]]; then
 		error "Error: Invalid option: $arg"
 	elif [[ -z $remote_host ]]; then
@@ -135,7 +137,12 @@ if [[ $remote_host == http://* || $remote_host == https://* ]]; then
 fi
 
 if [[ $remote_host == *@* ]]; then
-	remote_user="${remote_host/@*/}"
+	new_remote_user="${remote_host/@*/}"
+	if [[ -n $remote_user && -n $new_remote_user && "$remote_user" != "$new_remote_user" ]]; then
+		error "Error: Can't tell which user to connect as, $remote_user or $new_remote_user"
+	fi
+
+	remote_user="$new_remote_user"
 	remote_host="${remote_host/*@/}"
 fi
 
@@ -152,7 +159,7 @@ SCHLEP_DOCKER_EXEC_OPTS="-it --user $remote_user $SCHLEP_DOCKER_EXEC_OPTS"
 
 # Uninstall schlep from the remote, if that's what we're supposed to do
 if [[ $uninstall == true ]]; then
-	[[ $quiet_install == true ]] || echo "Uninstalling schlep's files..."
+	[[ $quiet == true ]] || echo "Uninstalling schlep's files..."
 	uninstall_cmd='set -e
 		if [[ -e "$HOME/.schlep" ]]; then
 			find "$HOME/.schlep" -name "uninstall.sh" -exec {} --remote \;
@@ -170,34 +177,33 @@ if [[ $uninstall == true ]]; then
 
 # Otherwise, copy files and run install scripts if needed, then connect interactively
 else
-	if [[ $force_install == true ]]; then
-		install=true
+	if [[ $install_all == true ]]; then
+		[[ $quiet == true ]] && print_arg='' || print_arg=' -print'
+		install_cmd='find "$HOME/.schlep" -name "install.sh"'$print_arg' -exec {} \;'
 	else
+		install_cmd='"$HOME/.schlep/bash-settings/install.sh"'
+	fi
+
+	if [[ $copy_files == false ]]; then
 		installed_cmd='[[ -d "$HOME/.schlep" ]] && echo -n false || echo -n true'
 
 		if [[ $remote_type == "docker" ]]; then
-			install="$(docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash -c "$installed_cmd")"
-			install="$(echo $install)"
+			copy_files="$(docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash -c "$installed_cmd")"
+			copy_files="$(echo $copy_files)"
 
 		elif [[ $remote_type == "ssh" ]]; then
-			install="$(ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$installed_cmd")"
-		fi
-
-		if [[ $install != true && $quiet_install != true ]]; then
-			# If you previously installed only basic settings, and now want to install all features,
-			# either use -f/--force along with -a/--all, or run schlep_install in your interactive session
-			echo "Schlep has already been installed -- keeping its current settings"
+			copy_files="$(ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$installed_cmd")"
 		fi
 	fi
 
 	if [[ $remote_type == "docker" ]]; then
 		# Install if we need to
-		if [[ $install == true ]]; then
+		if [[ $copy_files == true ]]; then
 			[[ $remote_user == "root" ]] && base_path="/root" || base_path="/home/$remote_user"
 			docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
 				bash -c 'mkdir -p "$HOME/.schlep" && echo -n '"$remote_host"' > "$HOME/.schlep/.host"'
 
-			[[ $quiet_install == true ]] || echo "Schlepping files..."
+			[[ $quiet == true ]] || echo "Schlepping files..."
 
 			for thing in *; do
 				if [[ $thing != "bin" && $thing != "LICENSE" && $thing != "README.md" ]]; then
@@ -207,8 +213,10 @@ else
 
 			docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" \
 				bash -c 'chown -R --reference="$HOME" "$HOME/.schlep"'
+		fi
 
-			[[ $quiet_install == true ]] || echo "Installing..."
+		if [[ $copy_files == true || $install_all == true ]]; then
+			[[ $quiet == true ]] || echo "Installing..."
 			docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash -c "$install_cmd"
 		fi
 
@@ -217,15 +225,17 @@ else
 
 	elif [[ $remote_type == "ssh" ]]; then
 		# Install if we need to
-		if [[ $install == true ]]; then
-			[[ $quiet_install == true ]] || echo "Schlepping files..."
+		if [[ $copy_files == true ]]; then
+			[[ $quiet == true ]] || echo "Schlepping files..."
 			rsync -DlpqRrtu --exclude=".git" --exclude="bin" --exclude="LICENSE" --exclude="/README.md" \
 				$SCHLEP_RSYNC_OPTS ./ "$remote_user@$remote_host:~/.schlep"
 
 			ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" \
 				"echo -n $remote_host > \"\$HOME/.schlep/.host\""
+		fi
 
-			[[ $quiet_install == true ]] || echo "Installing..."
+		if [[ $copy_files == true || $install_all == true ]]; then
+			[[ $quiet == true ]] || echo "Installing..."
 			ssh -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$install_cmd"
 		fi
 
