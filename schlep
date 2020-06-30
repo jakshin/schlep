@@ -188,8 +188,16 @@ else
 		installed_cmd='[[ -d "$HOME/.schlep" ]] && echo -n false || echo -n true'
 
 		if [[ $remote_type == "docker" ]]; then
+			set +e
 			copy_files="$(docker $SCHLEP_DOCKER_OPTS exec $SCHLEP_DOCKER_EXEC_OPTS "$remote_host" bash -c "$installed_cmd")"
+			result=$?
+			set -e
+
 			copy_files="$(echo $copy_files)"
+			if [[ $copy_files != true && $copy_files != false ]]; then
+				echo "$copy_files"
+				[[ $result != 0 ]] && exit $result || false
+			fi
 
 		elif [[ $remote_type == "ssh" ]]; then
 			copy_files="$(ssh -oStrictHostKeyChecking=no -T $SCHLEP_SSH_OPTS "$remote_user@$remote_host" "$installed_cmd")"
