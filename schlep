@@ -52,7 +52,12 @@ function usage() {
 set -e
 
 # Run from this script's directory
-cd -- "$(dirname -- "$0")"
+self="$0"
+while [[ -L $self ]]; do
+	self="$(readlink "$self")"
+done
+
+cd -- "$(dirname -- "$self")"
 
 # Colors are nice
 error='\033[38;5;160m'
