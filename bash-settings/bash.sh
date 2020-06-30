@@ -79,43 +79,65 @@ function schlep() {
 }
 
 function schlep_install() {
-	local feature="$1"  # e.g. "micro", "pretty-less", "vim-settings"
-	_schlep_action_impl "install" "$feature"
+	_schlep_action_impl "install" "$@"  # Pass names of features to install
 }
 
 function schlep_uninstall() {
-	local feature="$1"  # e.g. "micro", "pretty-less", "vim-settings"
-	_schlep_action_impl "uninstall" "$feature"
+	_schlep_action_impl "uninstall" "$@"  # Pass names of features to uninstall
 }
 
 function _schlep_action_impl() {
 	# Private implementation of schlep_install and schlep_uninstall
-	local action="$1"   # "install" or "uninstall"
-	local feature="$2"
+	local action="$1"
+	[[ $action == "install" || $action == "uninstall" ]] || return 1
 
-	if [[ $action != "install" && $action != "uninstall" ]]; then
-		echo "Aaaargh, something went wrong"
-		return 1
-	elif [[ -z $feature ]]; then
-		echo "Usage: schlep_${action} feature"
-		_schlep_features
-		return 1
-	elif [[ ! -d "$HOME/.schlep/$feature" ]]; then
-		echo "Error: \"$feature\" isn't an ${action}able schlep feature"
+	shift
+	local arg features=0
+
+	for arg; do
+		if [[ -z $arg ]]; then
+			continue
+		elif [[ ! -e "$HOME/.schlep/$arg/install.sh" ]]; then
+			[[ $arg == "-h" || $arg == "--help" ]] || echo "Error: \"$arg\" isn't an ${action}able schlep feature"
+			features=0
+			break
+		else
+			(( features++ ))
+		fi
+	done
+
+	if [[ $features == 0 ]]; then
+		echo "Usage: schlep_${action} feature [...]"
 		_schlep_features
 		return 1
 	fi
 
-	if [[ -e "$HOME/.schlep/$feature/$action-fn.sh" ]]; then
-		source "$HOME/.schlep/$feature/$action-fn.sh"
-	else
-		"$HOME/.schlep/$feature/$action.sh"
-	fi
+	for arg; do
+		[[ -n $arg ]] || continue
+		[[ $features == 1 ]] || echo "$arg"
+		if [[ -e "$HOME/.schlep/$arg/$action-fn.sh" ]]; then
+			source "$HOME/.schlep/$arg/$action-fn.sh"
+		else
+			"$HOME/.schlep/$arg/$action.sh"
+		fi
+	done
 }
 
+function _schlep_comp_impl() {
+	# Private utility function -- bash completion for schlep_install and schlep_uninstall
+	local features
+	features="$(_schlep_features true)"
+
+	local current_word="${COMP_WORDS[COMP_CWORD]}"
+	COMPREPLY=( $(compgen -W "$features" -- "$current_word") )
+}
+
+complete -F _schlep_comp_impl schlep_install schlep_uninstall
+
 function _schlep_features() {
-	# Private utility function
-	echo -n "Valid features: "
+	# Private utility function -- lists valid schlep features, on one line
+	local bare="${1:-false}"  # Optional boolean
+	[[ $bare == true ]] || echo -n "Valid features: "
 	find ~/.schlep -name "install.sh" -print0 | xargs -0n1 dirname | xargs -n1 basename | xargs
 }
 
