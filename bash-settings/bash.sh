@@ -79,23 +79,44 @@ function schlep() {
 }
 
 function schlep_install() {
-	local feature="$1"  # e.g. "micro"
-
-	if [[ -e "$HOME/.schlep/$feature/install-fn.sh" ]]; then
-		source "$HOME/.schlep/$feature/install-fn.sh"
-	else
-		"$HOME/.schlep/$feature/install.sh"
-	fi
+	local feature="$1"  # e.g. "micro", "pretty-less", "vim-settings"
+	_schlep_action_impl "install" "$feature"
 }
 
 function schlep_uninstall() {
-	local feature="$1"  # e.g. "micro"
+	local feature="$1"  # e.g. "micro", "pretty-less", "vim-settings"
+	_schlep_action_impl "uninstall" "$feature"
+}
 
-	if [[ -e "$HOME/.schlep/$feature/uninstall-fn.sh" ]]; then
-		source "$HOME/.schlep/$feature/uninstall-fn.sh"
-	else
-		"$HOME/.schlep/$feature/uninstall.sh"
+function _schlep_action_impl() {
+	# Private implementation of schlep_install and schlep_uninstall
+	local action="$1"   # "install" or "uninstall"
+	local feature="$2"
+
+	if [[ $action != "install" && $action != "uninstall" ]]; then
+		echo "Aaaargh, something went wrong"
+		return 1
+	elif [[ -z $feature ]]; then
+		echo "Usage: schlep_${action} feature"
+		_schlep_features
+		return 1
+	elif [[ ! -d "$HOME/.schlep/$feature" ]]; then
+		echo "Error: \"$feature\" isn't an ${action}able schlep feature"
+		_schlep_features
+		return 1
 	fi
+
+	if [[ -e "$HOME/.schlep/$feature/$action-fn.sh" ]]; then
+		source "$HOME/.schlep/$feature/$action-fn.sh"
+	else
+		"$HOME/.schlep/$feature/$action.sh"
+	fi
+}
+
+function _schlep_features() {
+	# Private utility function
+	echo -n "Valid features: "
+	find ~/.schlep -name "install.sh" -print0 | xargs -0n1 dirname | xargs -n1 basename | xargs
 }
 
 function take() {
